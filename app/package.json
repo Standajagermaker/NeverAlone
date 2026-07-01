@@ -15,18 +15,30 @@
     "@expo/vector-icons": "latest",
     "@react-native-async-storage/async-storage": "latest",
     "@supabase/supabase-js": "latest",
+<<<<<<< HEAD
     "expo": "latest",
+=======
+    "expo": "~57.0.0",
+>>>>>>> 3e2624d83ab6e0d9ffe148a40db8b3de82b899e7
     "expo-constants": "latest",
     "expo-linking": "latest",
     "expo-localization": "latest",
     "expo-router": "latest",
     "expo-secure-store": "latest",
+<<<<<<< HEAD
     "expo-splash-screen": "latest",
     "expo-status-bar": "latest",
     "i18next": "latest",
     "react": "latest",
     "react-i18next": "latest",
     "react-native": "latest",
+=======
+    "expo-status-bar": "latest",
+    "i18next": "latest",
+    "react": "19.2.3",
+    "react-i18next": "latest",
+    "react-native": "0.86.0",
+>>>>>>> 3e2624d83ab6e0d9ffe148a40db8b3de82b899e7
     "react-native-gesture-handler": "latest",
     "react-native-reanimated": "latest",
     "react-native-safe-area-context": "latest",
