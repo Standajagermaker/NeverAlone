@@ -1,25 +1,16 @@
-import 'react-native-gesture-handler';
 import 'react-native-url-polyfill/auto';
-
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-import '@/core/i18n';
-import { AppThemeProvider, useAppTheme } from '@/core/theme/theme-provider';
+import '@/shared/i18n';
+import { ThemeProvider, useTheme } from '@/shared/theme/ThemeProvider';
 
 function RootNavigator() {
-  const { colors } = useAppTheme();
-
+  const { theme, isDark } = useTheme();
   return (
     <>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.background }
-        }}
-      />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
     </>
   );
 }
@@ -27,9 +18,9 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AppThemeProvider>
+      <ThemeProvider>
         <RootNavigator />
-      </AppThemeProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

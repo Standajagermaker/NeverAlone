@@ -1,22 +1,24 @@
-# NeverAlone Sprint 1
+# NeverAlone Sprint 1+2
 
-Production baseline for NeverAlone mobile app.
+Hotový baseline pro startup workflow.
 
-## Run
+## Sprint 1
+- Expo Router
+- Theme
+- i18n CZ/EN
+- Supabase client
+- Feature First architektura
+- první obrazovka
+- CI preview workflow
 
-```bash
-npm install
-npx expo start -c
-```
+## Sprint 2
+- auth flow
+- profile editor
+- aktivity
+- jazyky
+- země
+- lokální fallback + Supabase ready
 
-## Env
-
-Copy `.env.example` to `.env` and fill Supabase values.
-
-## Architecture
-
-Feature-first structure:
-
-- `src/core` shared config, theme, i18n, Supabase and primitives
-- `src/features` product features with components, hooks, services, types and screens
-- `app` Expo Router routes
+## Publikace mezivýsledku
+Nahraj složku do GitHubu. GitHub Actions ověří web build.
+Pro mobilní preview se napojí EAS po nastavení Expo účtu.

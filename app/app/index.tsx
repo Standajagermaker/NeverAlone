@@ -1,3 +1,2 @@
-import { HomeScreen } from '@/features/nearby/screens/home-screen';
-
-export default HomeScreen;
+import { Redirect } from 'expo-router';
+export default function Index() { return <Redirect href="/(tabs)" />; }
