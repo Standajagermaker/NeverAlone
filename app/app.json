@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "NeverAlone",
+    "slug": "neveralone",
+    "scheme": "neveralone",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#070A13"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.neveralone.mobile"
+    },
+    "android": {
+      "package": "app.neveralone.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#070A13"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
