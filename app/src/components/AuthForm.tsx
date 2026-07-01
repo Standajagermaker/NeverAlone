@@ -32,7 +32,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     setMessage("");
 
     if (!supabase || !isSupabaseConfigured) {
-      setMessage("Supabase is not configured on Vercel. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
+      setMessage(
+        "Supabase is not configured on Vercel. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+      );
       setBusy(false);
       return;
     }
@@ -48,24 +50,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         return;
       }
 
-      const user = result.data.user;
+      setMessage(isNew ? "New account created." : "Logged on.");
 
-      if (user) {
-        const { error } = await supabase.from("profiles").upsert({
-          id: user.id,
-          email,
-          full_name: "",
-          bio: ""
-        });
-
-        if (error) {
-          setMessage(error.message);
-          setBusy(false);
-          return;
-        }
-      }
-
-      setMessage(isNew ? "New account created. Opening profile." : "Logged on. Opening profile.");
       window.location.href = "/profile";
     } catch (error) {
       setMessage(authErrorMessage(error));
@@ -114,7 +100,11 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         Continue in preview mode
       </Link>
 
-      {message ? <p className="rounded-2xl bg-white/10 p-4 text-sm text-cyan-100">{message}</p> : null}
+      {message ? (
+        <p className="rounded-2xl bg-white/10 p-4 text-sm text-cyan-100">
+          {message}
+        </p>
+      ) : null}
 
       <p className="text-xs text-white/45">
         Supabase: {isSupabaseConfigured ? "configured" : "preview mode"}
