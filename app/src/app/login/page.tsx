@@ -10,12 +10,12 @@ export default function LoginPage() {
           <p className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-cyan-100 ring-1 ring-white/10">
             Sprint 6
           </p>
-          <h1 className="mt-5 text-5xl font-black tracking-tight">Sign in</h1>
+          <h1 className="mt-5 text-5xl font-black tracking-tight">Log on</h1>
           <p className="mt-5 leading-7 text-white/65">
-            Email authentication is now wired to Supabase when Vercel environment variables are configured.
+            Email authentication is wired to Supabase when Vercel environment variables are configured.
           </p>
           <p className="mt-5 text-sm text-white/50">
-            No account? <Link href="/signup" className="text-cyan-100 underline">Create one</Link>
+            New here? <Link href="/signup" className="text-cyan-100 underline">New</Link>
           </p>
         </div>
 
