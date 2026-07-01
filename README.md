@@ -1,10 +1,6 @@
-# NeverAlone Web Preview
+# NeverAlone Web Preview - Sprint 4+5
 
-This is the verified first web-preview baseline for NeverAlone.
-
-## Deploy on Vercel
-
-Use:
+Deploy on Vercel:
 
 - Framework Preset: Next.js
 - Root Directory: app
@@ -12,10 +8,11 @@ Use:
 - Build Command: npm run build
 - Output Directory: leave empty
 
-## Local run
+Sprint 4:
+- Sign-in preview
+- Supabase-ready auth shell
 
-```bash
-cd app
-npm install
-npm run dev
-```
+Sprint 5:
+- Profile onboarding
+- Activity and language selection
+- Nearby trust/safety cards

@@ -14,3 +14,7 @@ body {
   background: #08111f;
   color: #fff7ed;
 }
+
+input, textarea, select {
+  color: #fff7ed;
+}
