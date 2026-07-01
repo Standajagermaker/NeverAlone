@@ -1,40 +1,27 @@
 {
-  "name": "neveralone-app",
-  "version": "0.2.0",
+  "name": "neveralone-web-preview",
+  "version": "0.1.0",
   "private": true,
-  "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "@expo/vector-icons": "latest",
-    "@react-native-async-storage/async-storage": "latest",
-    "@supabase/supabase-js": "latest",
-    "expo": "latest",
-    "expo-constants": "latest",
-    "expo-linking": "latest",
-    "expo-localization": "latest",
-    "expo-router": "latest",
-    "expo-secure-store": "latest",
-    "expo-splash-screen": "latest",
-    "expo-status-bar": "latest",
-    "i18next": "latest",
-    "react": "latest",
-    "react-i18next": "latest",
-    "react-native": "latest",
-    "react-native-gesture-handler": "latest",
-    "react-native-reanimated": "latest",
-    "react-native-safe-area-context": "latest",
-    "react-native-screens": "latest",
-    "react-native-url-polyfill": "latest"
+    "@supabase/supabase-js": "^2.48.1",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "latest",
-    "typescript": "latest"
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^15.1.6",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
   }
 }
