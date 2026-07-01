@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
+const PROFILE_PHOTO_BUCKET = "profile-photos";
+const MAX_PHOTOS = 3;
+
 const ACTIVITY_OPTIONS = [
   "Coffee",
   "Beer",
@@ -22,6 +25,7 @@ type ProfileState = {
   bio: string;
   languages: string;
   activities: string[];
+  photo_urls: string[];
 };
 
 const emptyProfile: ProfileState = {
@@ -30,14 +34,25 @@ const emptyProfile: ProfileState = {
   bio: "",
   languages: "",
   activities: [],
+  photo_urls: [],
 };
 
 function errorMessage(error: unknown) {
   if (error instanceof Error) {
+    if (error.message.toLowerCase().includes("failed to fetch")) {
+      return "Connection to Supabase failed. Check Vercel env vars, redeploy, and run the Supabase SQL migration for profile fields/storage.";
+    }
+
     return error.message;
   }
 
   return "Profile action failed. Please try again.";
+}
+
+function fileExtension(file: File) {
+  if (file.type === "image/png") return "png";
+  if (file.type === "image/webp") return "webp";
+  return "jpg";
 }
 
 export function ProfileForm() {
@@ -46,6 +61,7 @@ export function ProfileForm() {
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
 
   const initials = useMemo(() => {
@@ -58,6 +74,8 @@ export function ProfileForm() {
       .join("") || "NA";
   }, [email, profile.full_name]);
 
+  const primaryPhoto = profile.photo_urls[0];
+
   useEffect(() => {
     let active = true;
 
@@ -68,48 +86,55 @@ export function ProfileForm() {
         return;
       }
 
-      const { data: userResult, error: userError } = await supabase.auth.getUser();
+      try {
+        const { data: userResult, error: userError } = await supabase.auth.getUser();
 
-      if (!active) return;
+        if (!active) return;
 
-      if (userError || !userResult.user) {
-        setMessage("Please log in to edit your traveler profile.");
+        if (userError || !userResult.user) {
+          setMessage("Please log in to edit your traveler profile.");
+          setLoading(false);
+          return;
+        }
+
+        setUserId(userResult.user.id);
+        setEmail(userResult.user.email ?? "");
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, location, bio, languages, activities, photo_urls")
+          .eq("id", userResult.user.id)
+          .maybeSingle();
+
+        if (!active) return;
+
+        if (error) {
+          setMessage(`${error.message}. If this mentions a missing column, run the Supabase migration first.`);
+          setLoading(false);
+          return;
+        }
+
+        if (data) {
+          setProfile({
+            full_name: typeof data.full_name === "string" ? data.full_name : "",
+            location: typeof data.location === "string" ? data.location : "",
+            bio: typeof data.bio === "string" ? data.bio : "",
+            languages: Array.isArray(data.languages)
+              ? data.languages.join(", ")
+              : typeof data.languages === "string"
+                ? data.languages
+                : "",
+            activities: Array.isArray(data.activities) ? data.activities : [],
+            photo_urls: Array.isArray(data.photo_urls) ? data.photo_urls.slice(0, MAX_PHOTOS) : [],
+          });
+        }
+
         setLoading(false);
-        return;
-      }
-
-      setUserId(userResult.user.id);
-      setEmail(userResult.user.email ?? "");
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("full_name, location, bio, languages, activities")
-        .eq("id", userResult.user.id)
-        .maybeSingle();
-
-      if (!active) return;
-
-      if (error) {
-        setMessage(error.message);
+      } catch (error) {
+        if (!active) return;
+        setMessage(errorMessage(error));
         setLoading(false);
-        return;
       }
-
-      if (data) {
-        setProfile({
-          full_name: typeof data.full_name === "string" ? data.full_name : "",
-          location: typeof data.location === "string" ? data.location : "",
-          bio: typeof data.bio === "string" ? data.bio : "",
-          languages: Array.isArray(data.languages)
-            ? data.languages.join(", ")
-            : typeof data.languages === "string"
-              ? data.languages
-              : "",
-          activities: Array.isArray(data.activities) ? data.activities : [],
-        });
-      }
-
-      setLoading(false);
     }
 
     loadProfile();
@@ -128,25 +153,19 @@ export function ProfileForm() {
     }));
   }
 
-  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setMessage("");
-
+  async function saveProfile(nextProfile: ProfileState, successMessage = "Profile saved.") {
     if (!supabase || !isSupabaseConfigured) {
       setMessage("Supabase is not configured. Add Vercel env vars first.");
-      setSaving(false);
-      return;
+      return false;
     }
 
     if (!userId) {
       setMessage("Please log in again before saving your profile.");
-      setSaving(false);
-      return;
+      return false;
     }
 
     try {
-      const languages = profile.languages
+      const languages = nextProfile.languages
         .split(",")
         .map((language) => language.trim())
         .filter(Boolean);
@@ -154,27 +173,119 @@ export function ProfileForm() {
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: profile.full_name.trim(),
-          location: profile.location.trim(),
-          bio: profile.bio.trim(),
+          full_name: nextProfile.full_name.trim(),
+          location: nextProfile.location.trim(),
+          bio: nextProfile.bio.trim(),
           languages,
-          activities: profile.activities,
+          activities: nextProfile.activities,
+          photo_urls: nextProfile.photo_urls.slice(0, MAX_PHOTOS),
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);
 
       if (error) {
-        setMessage(error.message);
-        setSaving(false);
-        return;
+        setMessage(`${error.message}. If this mentions RLS or missing columns, run the Supabase migration and check profiles policies.`);
+        return false;
       }
 
-      setMessage("Profile saved.");
-      setSaving(false);
+      setProfile(nextProfile);
+      setMessage(successMessage);
+      return true;
     } catch (error) {
       setMessage(errorMessage(error));
-      setSaving(false);
+      return false;
     }
+  }
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+    await saveProfile(profile);
+    setSaving(false);
+  }
+
+  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    if (!files.length) return;
+
+    if (!supabase || !isSupabaseConfigured) {
+      setMessage("Supabase is not configured. Add Vercel env vars first.");
+      return;
+    }
+
+    if (!userId) {
+      setMessage("Please log in again before uploading photos.");
+      return;
+    }
+
+    const remainingSlots = MAX_PHOTOS - profile.photo_urls.length;
+
+    if (remainingSlots <= 0) {
+      setMessage("Maximum 3 profile photos allowed.");
+      return;
+    }
+
+    const acceptedFiles = files
+      .filter((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type))
+      .slice(0, remainingSlots);
+
+    if (!acceptedFiles.length) {
+      setMessage("Upload JPEG, PNG or WebP images only.");
+      return;
+    }
+
+    setUploading(true);
+    setMessage("");
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of acceptedFiles) {
+        const path = `${userId}/${Date.now()}-${crypto.randomUUID()}.${fileExtension(file)}`;
+        const { error: uploadError } = await supabase.storage
+          .from(PROFILE_PHOTO_BUCKET)
+          .upload(path, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          setMessage(`${uploadError.message}. Check that bucket '${PROFILE_PHOTO_BUCKET}' exists and storage policies were created.`);
+          setUploading(false);
+          return;
+        }
+
+        const { data } = supabase.storage.from(PROFILE_PHOTO_BUCKET).getPublicUrl(path);
+        uploadedUrls.push(data.publicUrl);
+      }
+
+      const nextProfile = {
+        ...profile,
+        photo_urls: [...profile.photo_urls, ...uploadedUrls].slice(0, MAX_PHOTOS),
+      };
+
+      await saveProfile(nextProfile, "Photo uploaded.");
+      setUploading(false);
+    } catch (error) {
+      setMessage(errorMessage(error));
+      setUploading(false);
+    }
+  }
+
+  async function removePhoto(photoUrl: string) {
+    setSaving(true);
+    setMessage("");
+
+    const nextProfile = {
+      ...profile,
+      photo_urls: profile.photo_urls.filter((url) => url !== photoUrl),
+    };
+
+    await saveProfile(nextProfile, "Photo removed.");
+    setSaving(false);
   }
 
   async function handleSignOut() {
@@ -187,15 +298,24 @@ export function ProfileForm() {
   return (
     <div className="mt-8 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
       <aside className="rounded-[2rem] border border-white/10 bg-white/10 p-6">
-        <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-cyan-200 to-blue-500 text-4xl font-black text-slate-950">
-          {initials}
-        </div>
+        {primaryPhoto ? (
+          <img
+            src={primaryPhoto}
+            alt="Profile photo"
+            className="mx-auto h-32 w-32 rounded-full object-cover ring-4 ring-white/10"
+          />
+        ) : (
+          <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-cyan-200 to-blue-500 text-4xl font-black text-slate-950">
+            {initials}
+          </div>
+        )}
 
         <div className="mt-6 rounded-3xl bg-slate-950/50 p-5">
           <h2 className="text-xl font-bold">Profile status</h2>
           <div className="mt-4 space-y-3 text-sm text-white/70">
             <div>Account: {email ? email : "preview"}</div>
             <div>Profile: editable</div>
+            <div>Photos: {profile.photo_urls.length}/{MAX_PHOTOS}</div>
             <div>Safety: report/block planned</div>
             <div>Verification: planned</div>
           </div>
@@ -222,6 +342,56 @@ export function ProfileForm() {
         <p className="mt-3 text-sm text-white/60">
           Never travel alone. Build a useful profile for nearby travelers, nomads and locals.
         </p>
+
+        <div className="mt-6 rounded-3xl border border-white/10 bg-slate-950/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold">Profile photos</h3>
+              <p className="mt-1 text-sm text-white/55">Upload up to 3 photos. First photo is your main card photo.</p>
+            </div>
+            <label className={`cursor-pointer rounded-full px-5 py-3 text-sm font-semibold ${
+              loading || uploading || saving || !userId || profile.photo_urls.length >= MAX_PHOTOS
+                ? "bg-white/20 text-white/50"
+                : "bg-white text-slate-950 hover:bg-cyan-100"
+            }`}>
+              {uploading ? "Uploading..." : "Upload photo"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={handlePhotoUpload}
+                disabled={loading || uploading || saving || !userId || profile.photo_urls.length >= MAX_PHOTOS}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {[0, 1, 2].map((index) => {
+              const photoUrl = profile.photo_urls[index];
+
+              return (
+                <div key={index} className="relative flex aspect-square items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+                  {photoUrl ? (
+                    <>
+                      <img src={photoUrl} alt={`Profile photo ${index + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(photoUrl)}
+                        disabled={saving || uploading}
+                        className="absolute right-3 top-3 rounded-full bg-slate-950/80 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-900 disabled:opacity-60"
+                      >
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-sm text-white/35">Photo {index + 1}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-5">
           <label className="block">
@@ -297,7 +467,7 @@ export function ProfileForm() {
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
-            disabled={loading || saving || !userId}
+            disabled={loading || saving || uploading || !userId}
             className="rounded-full bg-white px-6 py-3 font-semibold text-slate-950 hover:bg-cyan-100 disabled:opacity-60"
           >
             {saving ? "Saving..." : loading ? "Loading..." : "Save profile"}
